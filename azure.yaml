@@ -1,9 +1,14 @@
-name: python-timer-function
-type: app
+name: AzureFunctionHealthCheck
+metadata:
+  template: false
+  description: "Create function with health checks for monitor your application"
+infra:
+  provider: "bicep"
+  path: "./infra"
 services:
   function:
-    source: src/function
+    project: ./src/function
     build:
       - python -m pip install -r requirements.txt
-    deploy:
-      - type: function
+    language: python
+    host: function
