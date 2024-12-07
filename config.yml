@@ -1,0 +1,24 @@
+config:
+  log: console
+  #log: syslog
+  #log: file
+  #log: none
+  #log: console
+  logfile: file.txt
+  # loop_delay:
+  #  -1 - no loop
+  #  0+ - delays (in seconds) between iterations
+  loop_delay: 100
+hosts:
+  - address: google.com
+    prot: icmp
+  - address: google.com
+    prot: tcp
+    tcpport: 443
+  - address: google.com
+    prot: httpstatus
+    httpstatus: 200
+  - address: google.com
+    prot: httpstring
+    httpstring: google
+
