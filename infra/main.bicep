@@ -1,55 +1,42 @@
-param location string = resourceGroup().location
-param functionAppName string
-param storageAccountName string
+@description('Environment name (dev/test/prod)')
+param environmentName string = 'dev'
+
+@description('Azure region for all resources')
+param location string = 'eastus'
+
+@description('Function App hosting plan type')
 @allowed([
   'S1'
-  'Y1'
-  'EP1'
+  'Consumption'
+  'FlexConsumption'
 ])
-param skuName string = 'S1'
+param functionPlanType string = 'S1'
 
-resource storageAccount 'Microsoft.Storage/storageAccounts@2021-04-01' = {
-  name: storageAccountName
-  location: location
-  sku: {
-    name: 'Standard_LRS'
-  }
-  kind: 'StorageV2'
-}
+@description('Base name for resources')
+param baseName string = 'pytimerfunc${environmentName}${uniqueString(resourceGroup().id)}'
 
-resource appServicePlan 'Microsoft.Web/serverfarms@2021-02-01' = {
-  name: 'functionAppServicePlan'
+// Resource Group Resource
+resource resourceGroup 'Microsoft.Resources/resourceGroups@2021-04-01' = {
+  name: 'rg-${baseName}'
   location: location
-  sku: {
-    name: skuName
-    tier: skuName == 'S1' ? 'Standard' : (skuName == 'Y1' ? 'Dynamic' : 'PremiumV2')
-  }
-  kind: 'FunctionApp'
-}
-
-resource functionApp 'Microsoft.Web/sites@2021-02-01' = {
-  name: functionAppName
-  location: location
-  kind: 'functionapp'
-  properties: {
-    serverFarmId: appServicePlan.id
-    siteConfig: {
-      appSettings: [
-        {
-          name: 'AzureWebJobsStorage'
-          value: storageAccount.properties.primaryEndpoints.blob
-        }
-        {
-          name: 'FUNCTIONS_EXTENSION_VERSION'
-          value: '~4'
-        }
-        {
-          name: 'FUNCTIONS_WORKER_RUNTIME'
-          value: 'python'
-        }
-      ]
-    }
+  tags: {
+    environment: environmentName
+    project: 'python-timer-function'
   }
 }
 
-output functionAppEndpoint string = functionApp.properties.defaultHostName
+// Modules to be deployed within the resource group
+module functionResources 'function.bicep' = {
+  name: 'function-resources'
+  resourceGroup: resourceGroup.name
+  params: {
+    location: location
+    baseName: baseName
+    environmentName: environmentName
+    functionPlanType: functionPlanType
+  }
+}
+
+output resourceGroupName string = resourceGroup.name
+output functionAppName string = functionResources.outputs.functionAppName
+output functionAppHostName string = functionResources.outputs.functionAppHostName

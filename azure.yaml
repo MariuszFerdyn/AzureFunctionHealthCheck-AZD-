@@ -1,10 +1,9 @@
-# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
-
-name: functions-quickstart-python-azd
-metadata:
-  template: functions-quickstart-python-azd@1.0.0
+name: python-timer-function
+type: app
 services:
-  api:
-    project: .
-    language: python
-    host: function
+  function:
+    source: src/function
+    build:
+      - python -m pip install -r requirements.txt
+    deploy:
+      - type: function
