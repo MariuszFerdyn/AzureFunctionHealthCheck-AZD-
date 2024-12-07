@@ -1,11 +1,11 @@
 @description('Azure region for the resources')
 param location string
 
-@description('Base name for resources')
-param baseName string
-
 @description('Environment name')
 param environmentName string
+
+@description('Tags to be applied to resources')
+param tags object
 
 @description('Function App hosting plan type')
 @allowed([
@@ -15,9 +15,9 @@ param environmentName string
 ])
 param functionPlanType string = 'S1'
 
-var functionAppName = '${baseName}-function'
-var appServicePlanName = '${baseName}-plan'
-var storageAccountName = replace('${baseName}sa', '-', '')
+var functionAppName = '${environmentName}-function'
+var appServicePlanName = '${environmentName}-plan'
+var storageAccountName = replace('${environmentName}sa', '-', '')
 
 resource storageAccount 'Microsoft.Storage/storageAccounts@2022-05-01' = {
   name: storageAccountName
@@ -26,10 +26,7 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2022-05-01' = {
     name: 'Standard_LRS'
   }
   kind: 'StorageV2'
-  tags: {
-    environment: environmentName
-    project: 'python-timer-function'
-  }
+  tags: tags
 }
 
 resource appServicePlan 'Microsoft.Web/serverfarms@2022-03-01' = if (functionPlanType != 'Consumption') {
@@ -39,20 +36,14 @@ resource appServicePlan 'Microsoft.Web/serverfarms@2022-03-01' = if (functionPla
     name: functionPlanType == 'S1' ? 'S1' : 'EP1'
   }
   kind: functionPlanType == 'FlexConsumption' ? 'elastic' : 'functionapp'
-  tags: {
-    environment: environmentName
-    project: 'python-timer-function'
-  }
+  tags: tags
 }
 
 resource functionApp 'Microsoft.Web/sites@2022-03-01' = {
   name: functionAppName
   location: location
   kind: 'functionapp'
-  tags: {
-    environment: environmentName
-    project: 'python-timer-function'
-  }
+  tags: tags
   properties: {
     serverFarmId: functionPlanType == 'Consumption' ? null : appServicePlan.id
     siteConfig: {

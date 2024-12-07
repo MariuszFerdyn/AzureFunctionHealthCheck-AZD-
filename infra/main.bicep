@@ -1,8 +1,18 @@
-@description('Environment name (dev/test/prod)')
-param environmentName string = 'dev'
+targetScope = 'subscription'
 
-@description('Azure region for all resources')
-param location string = 'eastus'
+@minLength(1)
+@maxLength(64)
+@description('Name of the environment that can be used as part of naming resource convention')
+param environmentName string
+
+@minLength(1)
+@description('Primary location for all resources')
+param location string
+
+// Tags that should be applied to all resources
+var tags = {
+  'azd-env-name': environmentName
+}
 
 @description('Function App hosting plan type')
 @allowed([
@@ -12,28 +22,22 @@ param location string = 'eastus'
 ])
 param functionPlanType string = 'S1'
 
-@description('Base name for resources')
-param baseName string = 'pytimerfunc${environmentName}${uniqueString(resourceGroup().id)}'
-
 // Resource Group Resource
 resource resourceGroup 'Microsoft.Resources/resourceGroups@2021-04-01' = {
-  name: 'rg-${baseName}'
+  name: 'rg-${environmentName}'
   location: location
-  tags: {
-    environment: environmentName
-    project: 'python-timer-function'
-  }
+  tags: tags
 }
 
 // Modules to be deployed within the resource group
 module functionResources 'function.bicep' = {
   name: 'function-resources'
-  resourceGroup: resourceGroup.name
+  scope: resourceGroup
   params: {
     location: location
-    baseName: baseName
     environmentName: environmentName
     functionPlanType: functionPlanType
+    baseName: environmentName
   }
 }
 
