@@ -37,7 +37,6 @@ module functionResources 'function.bicep' = {
     location: location
     environmentName: environmentName
     functionPlanType: functionPlanType
-    baseName: environmentName
   }
 }
 
