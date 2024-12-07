@@ -1,0 +1,2 @@
+# AzureFunctionHealthCheck-AZD-
+AzureFunctionHealthCheck  - AZDversion
