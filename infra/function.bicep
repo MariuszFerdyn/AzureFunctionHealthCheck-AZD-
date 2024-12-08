@@ -1,12 +1,9 @@
 @description('Azure region for the resources')
 param location string
-
 @description('Environment name')
 param environmentName string
-
 @description('Tags to be applied to resources')
 param tags object
-
 @description('Function App hosting plan type')
 @allowed([
   'S1'
@@ -19,6 +16,35 @@ param functionPlanType string = 'S1'
 var functionAppName = '${environmentName}-function'
 var appServicePlanName = '${environmentName}-plan'
 var storageAccountName = replace('${environmentName}sa', '-', '')
+var logAnalyticsWorkspaceName = '${environmentName}-workspace'
+var applicationInsightsName = '${environmentName}-insights'
+
+// Log Analytics Workspace resource
+resource logAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2022-10-01' = {
+  name: logAnalyticsWorkspaceName
+  location: location
+  tags: tags
+  properties: {
+    sku: {
+      name: 'PerGB2018'
+    }
+    retentionInDays: 30 // Configurable retention period
+  }
+}
+
+// Application Insights resource
+resource applicationInsights 'Microsoft.Insights/components@2020-02-02' = {
+  name: applicationInsightsName
+  location: location
+  kind: 'web'
+  tags: tags
+  properties: {
+    Application_Type: 'web'
+    Flow_Type: 'Redfield'
+    Request_Source: 'IbizaAIExtension'
+    WorkspaceResourceId: logAnalyticsWorkspace.id
+  }
+}
 
 // Storage Account resource
 resource storageAccount 'Microsoft.Storage/storageAccounts@2022-05-01' = {
@@ -50,12 +76,12 @@ resource functionApp 'Microsoft.Web/sites@2022-03-01' = {
   name: functionAppName
   location: location
   kind: 'functionapp,linux'
-  
+ 
   // Add system-assigned managed identity
   identity: {
     type: 'SystemAssigned'
   }
-  
+ 
   tags: {
     'azd-env-name': environmentName
     'azd-service-name': 'HealthCheckFunction'
@@ -68,7 +94,7 @@ resource functionApp 'Microsoft.Web/sites@2022-03-01' = {
       // Python-specific configuration
       pythonVersion: '3.11'
       linuxFxVersion: 'python|3.11'
-      
+     
       // Consumption and Flex Consumption plans don't require an App Service Plan
       functionAppScaleLimit: functionPlanType == 'Consumption' ? 200 : null
      
@@ -76,7 +102,7 @@ resource functionApp 'Microsoft.Web/sites@2022-03-01' = {
       elastic: functionPlanType == 'FlexConsumption' ? {
         maximumInstanceCount: 100 // Configurable based on your needs
       } : null
-      
+     
       // App settings for Function App
       appSettings: [
         {
@@ -84,7 +110,15 @@ resource functionApp 'Microsoft.Web/sites@2022-03-01' = {
           value: 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};EndpointSuffix=${environment().suffixes.storage};AccountKey=${storageAccount.listKeys().keys[0].value}'
         }
         {
-          name: 'SCM_DO_BUILD_DURING_DEPLOYMENT' 
+          name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
+          value: applicationInsights.properties.InstrumentationKey
+        }
+        {
+          name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
+          value: applicationInsights.properties.ConnectionString
+        }
+        {
+          name: 'SCM_DO_BUILD_DURING_DEPLOYMENT'
           value: 'true'
         }
         {
@@ -99,11 +133,39 @@ resource functionApp 'Microsoft.Web/sites@2022-03-01' = {
           name: 'FUNCTIONS_WORKER_RUNTIME'
           value: 'python'
         }
+        // Optional: Add Application Insights sampling settings
+        {
+          name: 'APPINSIGHTS_SAMPLING_PERCENTAGE'
+          value: '100' // 100% collection, adjust as needed for performance
+        }
       ]
     }
   }
 }
 
-// Outputs remain the same
+// Optional: Diagnostic settings to send logs to Log Analytics
+resource functionAppDiagnosticSettings 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
+  name: 'functionapp-diagnostics'
+  scope: functionApp
+  properties: {
+    workspaceId: logAnalyticsWorkspace.id
+    logs: [
+      {
+        category: 'FunctionAppLogs'
+        enabled: true
+      }
+    ]
+    metrics: [
+      {
+        category: 'AllMetrics'
+        enabled: true
+      }
+    ]
+  }
+}
+
+// Outputs
 output functionAppName string = functionApp.name
 output functionAppHostName string = functionApp.properties.defaultHostName
+output applicationInsightsName string = applicationInsights.name
+output logAnalyticsWorkspaceId string = logAnalyticsWorkspace.id
