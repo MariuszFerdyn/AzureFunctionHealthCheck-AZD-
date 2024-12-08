@@ -45,27 +45,18 @@ resource functionApp 'Microsoft.Web/sites@2022-03-01' = {
   kind: 'functionapp'
   tags: tags
   properties: {
+    // Conditionally set serverFarmId based on the function plan type
     serverFarmId: functionPlanType == 'Consumption' ? null : appServicePlan.id
+    
+    // Additional configuration to support different hosting plans
     siteConfig: {
-      linuxFxVersion: 'PYTHON|3.10'
-      appSettings: [
-        {
-          name: 'AzureWebJobsStorage'
-          value: 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};EndpointSuffix=${environment().suffixes.storage};AccountKey=${storageAccount.listKeys().keys[0].value}'
-        }
-        {
-          name: 'WEBSITE_RUN_FROM_PACKAGE'
-          value: '1'
-        }
-        {
-          name: 'FUNCTIONS_WORKER_RUNTIME'
-          value: 'python'
-        }
-        {
-          name: 'FUNCTIONS_EXTENSION_VERSION'
-          value: '~4'
-        }
-      ]
+      // Consumption and Flex Consumption plans don't require an App Service Plan
+      functionAppScaleLimit: functionPlanType == 'Consumption' ? 200 : null
+      
+      // Elastic (Flex Consumption) specific settings
+      elastic: functionPlanType == 'FlexConsumption' ? {
+        maximumInstanceCount: 100 // Configurable based on your needs
+      } : null
     }
   }
 }

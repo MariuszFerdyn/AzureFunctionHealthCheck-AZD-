@@ -6,7 +6,7 @@ infra:
   provider: "bicep"
   path: "./infra"
 services:
-  function:
+  HealthCheckFunction:
     project: ./src/function
     build:
       - python -m pip install -r requirements.txt

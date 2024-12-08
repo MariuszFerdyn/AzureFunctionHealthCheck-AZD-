@@ -37,7 +37,10 @@ module functionResources 'function.bicep' = {
     location: location
     environmentName: environmentName
     functionPlanType: functionPlanType
-    tags: tags
+    tags: {
+      'azd-env-name': environmentName
+      'azd-service-name': 'HealthCheckFunction'
+    }
   }
 }
 
