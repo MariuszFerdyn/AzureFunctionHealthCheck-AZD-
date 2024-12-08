@@ -1,5 +1,5 @@
 config:
-  log: console
+  log: none
   #log: syslog
   #log: file
   #log: none
@@ -8,7 +8,7 @@ config:
   # loop_delay:
   #  -1 - no loop
   #  0+ - delays (in seconds) between iterations
-  loop_delay: 100
+  loop_delay: -1
 hosts:
   - address: google.com
     prot: icmp
