@@ -40,6 +40,8 @@ def log(log, end='\n', flush=True):
         logger.info(log)
     elif log_dest == 'none':
         pass
+    elif log_dest == 'azurefunction':
+        logging.info(log)
     else:
         print(log, end=end, flush=flush)
 

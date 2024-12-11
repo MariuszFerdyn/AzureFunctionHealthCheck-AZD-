@@ -1,9 +1,10 @@
 config:
-  log: console
+  log: azurefunction
   #log: syslog
   #log: file
   #log: none
   #log: console
+  #log: azurefunction
   logfile: file.txt
   # loop_delay:
   #  -1 - no loop
