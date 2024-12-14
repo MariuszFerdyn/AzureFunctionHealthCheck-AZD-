@@ -45,7 +45,7 @@ def log(log, end='\n', flush=True):
     else:
         print(log, end=end, flush=flush)
 
-@app.timer_trigger(schedule="* * * * * *", arg_name="myTimer", run_on_startup=False,
+@app.timer_trigger(schedule="0 */30 * * * *", arg_name="myTimer", run_on_startup=False,
               use_monitor=False) 
 def HealtchCheck01(myTimer: func.TimerRequest) -> None:
 
